@@ -1,0 +1,46 @@
+#!/usr/bin/make -f
+# SPDX-License-Identifier: BSD-2-Clause
+# Copyright (c) 2026 The Blueberry Pie OS Authors
+
+include /usr/share/pietoolchain/rules.mk
+
+SOURCES := $(addprefix libxml2/,buf.c c14n.c catalog.c chvalid.c debugXML.c dict.c DOCBparser.c \
+	encoding.c entities.c error.c globals.c hash.c HTMLparser.c HTMLtree.c legacy.c list.c \
+	nanoftp.c nanohttp.c parser.c parserInternals.c pattern.c relaxng.c SAX.c SAX2.c \
+	schematron.c threads.c tree.c uri.c valid.c xinclude.c xlink.c xmlIO.c xmlmemory.c \
+	xmlmodule.c xmlreader.c xmlregexp.c xmlsave.c xmlschemas.c xmlschemastypes.c xmlstring.c \
+	xmlunicode.c xmlversion.c xmlwriter.c xpath.c xpointer.c)
+GEN := $(SRCROOT)/Pregenerated Files
+FLAGS := $(BASE_CFLAGS) -std=gnu99 -DNDEBUG -DHAVE_CONFIG_H -DLIBXML_STATIC \
+	-I$(CURDIR)/debian -I'$(GEN)/include' -I$(SRCROOT)/libxml2/include -I$(SRCROOT)/libxml2 -isystem $(SDK)/usr/local/include
+DYLIB := $(OBJ)/libxml2.2.dylib
+
+$(OBJ)/%.o: $(SRCROOT)/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(FLAGS) -c $< -o $@
+
+$(OBJ)/libxml2.a: $(patsubst %.c,$(OBJ)/%.o,$(SOURCES))
+	$(LIBTOOL) -static -o $@ $^
+
+$(DYLIB): $(OBJ)/libxml2.a
+	$(CC) $(BASE_LDFLAGS) -dynamiclib -install_name /usr/lib/libxml2.2.dylib \
+		-compatibility_version 10 -current_version 10.9 \
+		-Wl,-force_load,$< -Wl,-exported_symbols_list,$(CURDIR)/debian/libxml2.exp -licucore -lz -o $@
+
+$(OBJ)/bin/%: $(OBJ)/libxml2/%.o $(DYLIB)
+	@mkdir -p $(dir $@)
+	$(CC) $(BASE_LDFLAGS) $^ -o $@
+
+install: $(DYLIB) $(OBJ)/bin/xmllint $(OBJ)/bin/xmlcatalog
+	install -d $(ROOT)/usr/lib/pkgconfig $(ROOT)/usr/bin $(ROOT)/usr/include/libxml2/libxml
+	install -m 755 $(DYLIB) $(ROOT)/usr/lib/
+	ln -sf libxml2.2.dylib $(ROOT)/usr/lib/libxml2.dylib
+	install -m 755 $(OBJ)/bin/xmllint $(OBJ)/bin/xmlcatalog $(ROOT)/usr/bin/
+	install -m 644 $(filter-out %/xmlversion.h,$(wildcard $(SRCROOT)/libxml2/include/libxml/*.h)) $(ROOT)/usr/include/libxml2/libxml/
+	install -m 644 '$(GEN)/include/libxml/xmlversion.h' $(ROOT)/usr/include/libxml2/libxml/
+	install -m 644 debian/libxml-2.0.pc $(ROOT)/usr/lib/pkgconfig/
+	install -d $(ROOT)/usr/share/man/man1 $(ROOT)/usr/share/man/man3
+	install -m 644 $(SRCROOT)/libxml2/doc/xmllint.1 $(SRCROOT)/libxml2/doc/xmlcatalog.1 $(ROOT)/usr/share/man/man1/
+	install -m 644 $(SRCROOT)/libxml2/libxml.3 $(ROOT)/usr/share/man/man3/
+
+.PHONY: install
