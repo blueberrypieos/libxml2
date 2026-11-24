@@ -162,11 +162,6 @@ Files: libxml2/buf.h
 Copyright: 1998-2012 Daniel Veillard
 License: MIT
 
-Files: libxml2/xmlversion.c
- libxml2/xmlversionInternal.h
-Copyright: Apple Inc.
-License: MIT
-
 Files: libxml2/xmlIO.c
 Copyright: 1998-2012 Daniel Veillard
  Apple Inc.
@@ -236,6 +231,8 @@ Copyright: 2026 The Blueberry Pie OS Authors
 License: BSD-2-Clause
 
 Files: debian/libxml2.exp
+ libxml2/xmlversion.c
+ libxml2/xmlversionInternal.h
 Copyright: Apple Inc.
 License: MIT
 
